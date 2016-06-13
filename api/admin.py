@@ -4,12 +4,13 @@ from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 from .models import Client, Item, Categorie, Promotion, Transaction
 from django.contrib.admin.views.main import ChangeList
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from django.db import connection
 from datetime import timedelta
 from django.utils import timezone
 
 from actions import export_as_csv_action
+
 
 class PromotionFilter(admin.SimpleListFilter):
     title = 'promotion'
@@ -21,7 +22,8 @@ class PromotionFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() is not None:
-            return queryset.filter(promotion_id = self.value())
+            return queryset.filter(promotion_id=self.value())
+
 
 class SoldeFilter(admin.SimpleListFilter):
     title = 'solde'
@@ -35,9 +37,10 @@ class SoldeFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == '+':
-            return queryset.filter(solde__gt = 0)
+            return queryset.filter(solde__gt=0)
         if self.value() == '-':
-            return queryset.filter(solde__lte = 0)
+            return queryset.filter(solde__lte=0)
+
 
 class CategorieFilter(admin.SimpleListFilter):
     title = "catégorie"
@@ -49,7 +52,8 @@ class CategorieFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() is not None:
-            return queryset.filter(categorie_id = self.value())
+            return queryset.filter(categorie_id=self.value())
+
 
 class NombreFilter(admin.SimpleListFilter):
     title = 'disponibilité'
@@ -63,9 +67,10 @@ class NombreFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == 'disponible':
-            return queryset.filter(nombre__gt = 0)
+            return queryset.filter(nombre__gt=0)
         if self.value() == 'indisponible':
-            return queryset.filter(nombre__lte = 0)
+            return queryset.filter(nombre__lte=0)
+
 
 class AvailableFilter(admin.SimpleListFilter):
     title = 'en vente'
@@ -79,17 +84,21 @@ class AvailableFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == 'available':
-            return queryset.filter(disponible_a_la_vente = True)
+            return queryset.filter(disponible_a_la_vente=True)
         if self.value() == 'not_available':
-            return queryset.filter(disponible_a_la_vente = False)
+            return queryset.filter(disponible_a_la_vente=False)
+
 
 @admin.register(Client)
 class ClientAdmin(SimpleHistoryAdmin):
     list_display = ('nom', 'solde', 'cotisant', 'promotion')
     search_fields = ['nom', 'solde', 'promotion__nom']
-    list_filter = ('cotisant', SoldeFilter,PromotionFilter, )
-    actions = [export_as_csv_action("Exporter la sélection en CSV",
-                                fields=['nom', 'solde', 'cotisant', 'promotion'])]
+    list_filter = ('cotisant', SoldeFilter, PromotionFilter, )
+    actions = [
+        export_as_csv_action("Exporter la sélection en CSV",
+                             fields=['nom', 'solde', 'cotisant', 'promotion'])
+    ]
+
 
 @admin.register(Item)
 class ItemAdmin(SimpleHistoryAdmin):
@@ -104,8 +113,15 @@ class ItemAdmin(SimpleHistoryAdmin):
         ('couleur')
     )
 
-    actions = [export_as_csv_action("Exporter la sélection en CSV",
-                                    fields=['nom', 'nombre', 'prix', 'disponible_a_la_vente', 'categorie'])]
+    actions = [
+        export_as_csv_action("Exporter la sélection en CSV",
+                             fields=[
+                                 'nom',
+                                 'nombre',
+                                 'prix',
+                                 'disponible_a_la_vente',
+                                 'categorie'])
+    ]
 
     def get_list_display(self, request):
         if request.GET.get('categorie', False):
@@ -113,6 +129,7 @@ class ItemAdmin(SimpleHistoryAdmin):
         else:
             list_display = ('nom', 'nombre', 'prix', 'categorie')
         return list_display
+
 
 class TransactionChangeList(ChangeList):
 
@@ -129,28 +146,27 @@ class TransactionChangeList(ChangeList):
         # TODO Ajouter un timedelta pour afficher les 15 derniers jours
         date_mini = timezone.now() - timedelta(days=16)
         truncate_date = connection.ops.date_trunc_sql('day', 'date')
-        qs = Transaction.objects.extra({'day':truncate_date})
-        dictionnaire = qs.filter(type_de_la_transaction='Achat', date__gte = date_mini).values('day').annotate(Sum('prix')).order_by('day')
+        qs = Transaction.objects.extra({'day': truncate_date})
+        dictionnaire = qs.filter(type_de_la_transaction='Achat', date__gte=date_mini).values('day').annotate(Sum('prix')).order_by('day')
 
         for couple in dictionnaire:
             data.append(str(couple['prix__sum']))
             label_data.append(couple['day'].strftime('%d-%m-%Y'))
-        return {'data':data,'labels':label_data}
-
+        return {'data': data, 'labels': label_data}
 
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
     change_list_template = 'admin/transaction_change_list.html'
     list_display = ('date', 'client', 'prix', 'type_de_la_transaction')
-    date_hierarchy = 'date';
-    search_fields = ['type_de_la_transaction',]
+    date_hierarchy = 'date'
+    search_fields = ['type_de_la_transaction', ]
 
     def get_changelist(self, request):
         return TransactionChangeList
 
     class Meta:
-        model=Transaction
+        model = Transaction
 
 admin.site.register(Categorie)
 admin.site.register(Promotion)
