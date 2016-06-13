@@ -117,3 +117,4 @@ media
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+static
