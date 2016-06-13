@@ -86,7 +86,7 @@ class AvailableFilter(admin.SimpleListFilter):
 @admin.register(Client)
 class ClientAdmin(SimpleHistoryAdmin):
     list_display = ('nom', 'solde', 'cotisant', 'promotion')
-    search_fields = ['nom', 'solde', 'promotion']
+    search_fields = ['nom', 'solde', 'promotion__nom']
     list_filter = ('cotisant', SoldeFilter,PromotionFilter, )
     actions = [export_as_csv_action("Exporter la sélection en CSV",
                                 fields=['nom', 'solde', 'cotisant', 'promotion'])]
